@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "510022071223",
+    "project_id": "bus-tracker-1d401",
+    "storage_bucket": "bus-tracker-1d401.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510022071223:android:e9a474b2c55f42581e2e32",
+        "android_client_info": {
+          "package_name": "com.example.bus_tracker_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6HSERJ9FXwYNy7WKQImcAH2F7o-_-TW0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
