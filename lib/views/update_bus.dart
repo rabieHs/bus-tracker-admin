@@ -18,7 +18,7 @@ class UpdateBusScreen extends StatefulWidget {
 }
 
 class _AddBusScreenState extends State<UpdateBusScreen> {
-  getDrivers() async {
+  getBus() async {
     final result = await FirebaseFirestore.instance
         .collection("users")
         .where("type", isEqualTo: "driver")
@@ -34,19 +34,18 @@ class _AddBusScreenState extends State<UpdateBusScreen> {
   getDriver() async {
     final result = await FirebaseFirestore.instance
         .collection("users")
-        .where("type", isEqualTo: "driver")
+        .doc(widget.bus["driverId"])
         .get();
-    final List<Map> drivers = result.docs.map((doc) {
-      return doc.data();
-    }).toList();
+
     setState(() {
-      driversList = drivers;
+      currentDriver = result.data()!;
+      print(currentDriver);
     });
   }
 
+  Map? currentDriver = {};
   List<Map> driversList = [];
   final idController = TextEditingController();
-
   final numberOfSeatsController = TextEditingController();
 
   final numberOfStates = TextEditingController();
@@ -56,10 +55,18 @@ class _AddBusScreenState extends State<UpdateBusScreen> {
   String busDriver = "";
   @override
   void initState() {
-    states = List.generate(widget.bus["busRoute"].length,
-        (index) => TextEditingController(text: widget.bus["busRoute"]["city"]));
-    setState(() {});
     getDriver();
+    idController.text = widget.bus["busId"];
+    numberOfSeatsController.text = widget.bus["numberOfSeats"].toString();
+    numberOfStates.text = widget.bus["busRoute"].length.toString();
+    busDriver = widget.bus["driverId"];
+    numberOfFields = widget.bus["busRoute"].length;
+    states = List.generate(numberOfFields, (index) {
+      final route = widget.bus["busRoute"][index];
+      return TextEditingController(text: route["city"]);
+    });
+    setState(() {});
+    getBus();
     super.initState();
   }
 
@@ -74,138 +81,168 @@ class _AddBusScreenState extends State<UpdateBusScreen> {
         ),
       ),
       body: Center(
-          child: Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        width: MediaQuery.of(context).size.width * 0.4,
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(width: 3)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  "Create New Bus Form",
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            width: MediaQuery.of(context).size.width * 0.4,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(width: 3)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Create New Bus Form",
+                      style:
+                          TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(
+                      height: 50,
+                    ),
+                    TextField(
+                      controller: idController,
+                      decoration: const InputDecoration(
+                          border: OutlineInputBorder(), labelText: "bus ID"),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    TextField(
+                      keyboardType: TextInputType.number,
+                      controller: numberOfSeatsController,
+                      decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "number of seats"),
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    DropdownButtonFormField<String>(
+                        value: widget.bus["driverId"],
+                        items: List.generate(
+                            driversList.length,
+                            (index) => DropdownMenuItem(
+                                  child: Text(driversList[index]["name"]),
+                                  value: driversList[index]["id"],
+                                )),
+                        onChanged: (value) {
+                          busDriver = value!;
+                        }),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    TextField(
+                      onSubmitted: (number) {
+                        final newNumberOfFields = int.parse(number);
+                        // Efficiently update states:
+                        states =
+                            _updateStates(numberOfFields, newNumberOfFields);
+                        numberOfFields = newNumberOfFields;
+                        setState(() {});
+                      },
+                      controller: numberOfStates,
+                      decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "number of states"),
+                    ),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                    numberOfFields != 0
+                        ? ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: numberOfFields,
+                            itemBuilder: (context, index) {
+                              return DropdownButtonFormField<String>(
+                                  value: widget.bus != null
+                                      ? states.length >
+                                              widget.bus["busRoute"].length
+                                          ? null
+                                          : widget.bus["busRoute"][index]
+                                              ["city"]
+                                      : null, //,
+                                  items: List.generate(
+                                      tunisiaStatesMap.length,
+                                      (index) => DropdownMenuItem<String>(
+                                          value: tunisiaStatesMap[index]
+                                              ["value"]!,
+                                          child: Text(tunisiaStatesMap[index]
+                                              ["state"]!))),
+                                  onChanged: (value) {
+                                    states[index].text = value!;
+                                  });
+                            })
+                        : SizedBox(),
+                    const SizedBox(
+                      height: 30,
+                    ),
+                  ],
                 ),
-                const SizedBox(
-                  height: 50,
-                ),
-                TextField(
-                  controller: idController,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(), labelText: "bus ID"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                TextField(
-                  keyboardType: TextInputType.number,
-                  controller: numberOfSeatsController,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "number of seats"),
-                ),
-                const SizedBox(
-                  height: 30,
-                ),
-                DropdownButtonFormField<String>(
-                    items: List.generate(
-                        driversList.length,
-                        (index) => DropdownMenuItem(
-                              child: Text(driversList[index]["name"]),
-                              value: driversList[index]["id"],
-                            )),
-                    onChanged: (value) {
-                      busDriver = value!;
-                    }),
-                const SizedBox(
-                  height: 30,
-                ),
-                TextField(
-                  onSubmitted: (number) {
-                    print(number);
-                    setState(() {
-                      numberOfFields = int.parse(number);
-                      states = List.generate(int.parse(number),
-                          (index) => TextEditingController());
-                    });
-                  },
-                  controller: numberOfStates,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "number of states"),
-                ),
-                const SizedBox(
-                  height: 30,
-                ),
-                numberOfFields != 0
-                    ? ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: numberOfFields,
-                        itemBuilder: (context, index) {
-                          return DropdownButtonFormField(
-                              items: List.generate(
-                                  tunisiaStatesMap.length,
-                                  (index) => DropdownMenuItem<String>(
-                                      value: tunisiaStatesMap[index]["value"]!,
-                                      child: Text(
-                                          tunisiaStatesMap[index]["state"]!))),
-                              onChanged: (value) {
-                                states[index].text = value!;
-                              });
-                        })
-                    : SizedBox(),
-                const SizedBox(
-                  height: 30,
-                ),
-                MaterialButton(
-                  color: Colors.black,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  onPressed: () async {
-                    await FirebaseFirestore.instance
-                        .collection("bus")
-                        .doc(idController.text)
-                        .set({
-                      "driverName": "",
-                      "driverId": busDriver,
-                      "busId": idController.text,
-                      "numberOfSeats": numberOfSeatsController.text,
-                      "currentCity": "",
-                      "availableSeats": int.parse(numberOfSeatsController.text),
-                      "busRoute": List.generate(
-                          numberOfFields,
-                          (index) => {
-                                "city": states[index].text,
-                                "time": "12-04-2024 19:22"
-                              }).toList(),
-                    }).whenComplete(() {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text("Bus Created Successfully"),
-                        backgroundColor: Colors.green,
-                      ));
-                      Navigator.pop(context);
-                    });
-                  },
-                  child: Container(
-                    height: 60,
-                    width: 150,
-                    child: const Center(
-                        child: Text(
-                      "Create",
-                      style: TextStyle(color: Colors.white),
-                    )),
-                  ),
-                )
-              ],
+              ),
             ),
           ),
-        ),
+          SizedBox(
+            height: 20,
+          ),
+          MaterialButton(
+            color: Colors.black,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection("bus")
+                  .doc(idController.text)
+                  .update({
+                "driverId": busDriver,
+                "busId": idController.text,
+                "numberOfSeats": numberOfSeatsController.text,
+                "currentCity": "",
+                "availableSeats": int.parse(numberOfSeatsController.text),
+                "busRoute": List.generate(
+                    numberOfFields,
+                    (index) => {
+                          "city": states[index].text,
+                          "time": "12-04-2024 19:22"
+                        }).toList(),
+              }).whenComplete(() {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text("Bus updated Successfully"),
+                  backgroundColor: Colors.green,
+                ));
+                Navigator.pop(context);
+              });
+            },
+            child: Container(
+              height: 60,
+              width: 150,
+              child: const Center(
+                  child: Text(
+                "Update",
+                style: TextStyle(color: Colors.white),
+              )),
+            ),
+          )
+        ],
       )),
     );
+  }
+
+  List<TextEditingController> _updateStates(int oldCount, int newCount) {
+    final List<TextEditingController> updatedStates = [];
+    if (newCount > oldCount) {
+      // Add new controllers for additional fields
+      updatedStates.addAll(states);
+      updatedStates.addAll(
+          List.generate(newCount - oldCount, (i) => TextEditingController()));
+    } else {
+      updatedStates.addAll(states.sublist(0, newCount));
+    }
+    return updatedStates;
   }
 }
